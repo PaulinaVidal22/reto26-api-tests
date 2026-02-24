@@ -1,9 +1,20 @@
 import os
+import sys
+from pathlib import Path
+
 import pytest
 from dotenv import load_dotenv
 
+ROOT_DIR = Path(__file__).resolve().parents[2]
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
+
 from api.clients.nettra_client import NettraClient
-from api.clients.ithaka_client import IthakaClient
+
+try:
+    from api.clients.ithaka_client import IthakaClient
+except ModuleNotFoundError:
+    IthakaClient = None
 
 load_dotenv()
 
@@ -21,7 +32,7 @@ def _get_env_variable(name: str) -> str:
 
 @pytest.fixture(scope="session")
 def nettra_base_url():
-    return _get_env_variable("NETTRA_BASE_URL")
+    return os.getenv("NETTRA_BASE_URL", "http://localhost:8000")
 
 
 @pytest.fixture(scope="session")
@@ -59,6 +70,8 @@ def nettra_client(nettra_base_url, nettra_token):
 
 @pytest.fixture(scope="session")
 def ithaka_client(ithaka_base_url, ithaka_token):
+    if IthakaClient is None:
+        pytest.skip("IthakaClient no está disponible en este repositorio")
     client = IthakaClient(
         base_url=ithaka_base_url,
         token=ithaka_token
