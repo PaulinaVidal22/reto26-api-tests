@@ -10,6 +10,7 @@ if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
 from api.clients.nettra_client import NettraClient
+from api.clients.ithaka_client import IthakaClient
 
 try:
     from api.clients.ithaka_client import IthakaClient
