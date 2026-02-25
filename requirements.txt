@@ -37,6 +37,7 @@ pyrate-limiter==3.9.0
 pytest==9.0.2
 pytest-html==4.2.0
 pytest-metadata==3.1.1
+pytest-rerunfailures==14.0
 pytest-subtests==0.15.0
 pytest-xdist==3.8.0
 python-dateutil==2.9.0.post0
