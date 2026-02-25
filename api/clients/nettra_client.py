@@ -1,31 +1,30 @@
-import httpx
-from typing import Optional
+from api.clients.base_client import BaseClient
+from typing import Optional, Dict, Any
 
 
-class NettraClient:
-    def __init__(self, base_url: str, token: Optional[str] = None):
-        headers = {}
+class NettraClient(BaseClient):
 
-        if token:
-            headers["Authorization"] = f"Bearer {token}"
-
-        self.client = httpx.Client(
-            base_url=base_url,
-            headers=headers,
-            timeout=10.0
+    def get_well_anomalies(
+        self,
+        well_id: str,
+        params: Optional[Dict[str, Any]] = None,
+        headers_override: Optional[Dict[str, str]] = None,
+    ):
+        return self.get(
+            f"/wells/{well_id}/anomalies",
+            params=params,
+            headers_override=headers_override
         )
 
-    def get(self, endpoint: str, params: dict | None = None):
-        return self.client.get(endpoint, params=params)
 
-    def post(self, endpoint: str, data: dict):
-        return self.client.post(endpoint, json=data)
-
-    def put(self, endpoint: str, data: dict):
-        return self.client.put(endpoint, json=data)
-
-    def delete(self, endpoint: str):
-        return self.client.delete(endpoint)
-
-    def close(self):
-        self.client.close()
+    def get_well_parameters(
+        self,
+        well_id: str,
+        params: Optional[Dict[str, Any]] = None,
+        headers_override: Optional[Dict[str, str]] = None,
+    ):
+        return self.get(
+            f"/wells/{well_id}/parameters",
+            params=params,
+            headers_override=headers_override
+        )
