@@ -26,6 +26,7 @@ api/reports/
 htmlcov/
 .coverage
 .pytest_cache/
+.hypothesis/
 
 # Archivos de sistema
 .DS_Store
