@@ -1,18 +1,30 @@
 from api.models.nettra.parameter_models import ParameterResponse
 from api.models.nettra.anomaly_models import AnomaliesResponse
 
-
 class WellBuilder:
     """
-    Builder para resolver wells existentes que cumplan ciertas condiciones.
-    No crea datos. Solo selecciona datos válidos del entorno QA.
+    Builder/Selector de wells existentes en entorno QA.
+    No crea datos. Solo selecciona wells válidos.
+    Implementa:
+        - Fluent interface
+        - Caching interno
+        - Selección desacoplada
     """
 
     def __init__(self, client, token):
         self.client = client
         self.headers = {"Authorization": f"Bearer {token}"}
+        self._wells_cache = None
+        self._filters = []
+
+    # =========================
+    # Internal helpers
+    # =========================
 
     def _get_all_wells(self):
+        if self._wells_cache is not None:
+            return self._wells_cache
+
         response = self.client.get(
             "/wells/",
             headers_override=self.headers
@@ -22,59 +34,61 @@ class WellBuilder:
             raise RuntimeError("No se pudieron obtener wells")
 
         wells = response.json().get("items", [])
+
         if not wells:
             raise RuntimeError("No existen wells en el entorno")
 
+        self._wells_cache = wells
         return wells
 
-    def with_anomalies(self, page_size: int = 50):
-        """
-        Devuelve un well_id que tenga anomalies cargadas.
-        """
+    def _apply_filters(self, wells):
+        for filter_func in self._filters:
+            wells = filter(filter_func, wells)
+        return list(wells)
 
-        wells = self._get_all_wells()
-
-        for well in wells:
-            well_id = well["id"]
-
-            response = self.client.get_well_anomalies(
-                well_id=well_id,
-                params={"page_size": page_size},
-                headers_override=self.headers
-            )
-
-            if response.status_code == 200:
-                validated = AnomaliesResponse.model_validate(
-                    response.json()
-                )
-
-                if validated.data:
-                    return well_id
-
-        return None
+    # =========================
+    # Fluent API
+    # =========================
 
     def with_parameters(self, page_size: int = 50):
-        """
-        Devuelve un well_id que tenga parameter measurements.
-        """
-
-        wells = self._get_all_wells()
-
-        for well in wells:
-            well_id = well["id"]
-
+        def has_parameters(well):
             response = self.client.get_well_parameters(
-                well_id=well_id,
+                well_id=well["id"],
                 params={"page_size": page_size},
                 headers_override=self.headers
             )
 
-            if response.status_code == 200:
-                validated = ParameterResponse.model_validate(
-                    response.json()
-                )
+            if response.status_code != 200:
+                return False
 
-                if validated.data:
-                    return well_id
+            validated = ParameterResponse.model_validate(response.json())
+            return bool(validated.data)
 
-        return None
+        self._filters.append(has_parameters)
+        return self
+
+    def with_anomalies(self, page_size: int = 50):
+        def has_anomalies(well):
+            response = self.client.get_well_anomalies(
+                well_id=well["id"],
+                params={"page_size": page_size},
+                headers_override=self.headers
+            )
+
+            if response.status_code != 200:
+                return False
+
+            validated = AnomaliesResponse.model_validate(response.json())
+            return bool(validated.data)
+
+        self._filters.append(has_anomalies)
+        return self
+
+    def any(self):
+        wells = self._get_all_wells()
+        filtered = self._apply_filters(wells)
+
+        if not filtered:
+            return None
+
+        return filtered[0]["id"]

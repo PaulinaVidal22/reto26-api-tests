@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import List
+from typing import List, Optional
 from datetime import datetime
 from uuid import UUID
 
@@ -9,7 +9,7 @@ class Anomaly(BaseModel):
     anomaly_code: str
     anomaly_name: str
     t_from: datetime
-    t_to: datetime
+    t_to: Optional[datetime]
 
 
 class Pagination(BaseModel):

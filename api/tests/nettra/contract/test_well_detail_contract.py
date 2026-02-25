@@ -4,15 +4,18 @@ import schemathesis
 
 from api.tests.nettra.contract._base_contract import execute_contract_case
 
-
 BASE_URL = os.getenv("NETTRA_BASE_URL")
 
 if not BASE_URL:
     raise RuntimeError("NETTRA_BASE_URL no está definida")
 
+
 schema = (
     schemathesis.openapi.from_url(f"{BASE_URL}/openapi.json")
-    .include(path="/wells/{id}/parameters", method="GET")
+    .include(
+        path="/wells/{well_id}",
+        method="GET",
+    )
 )
 
 
@@ -20,21 +23,17 @@ schema = (
 @pytest.mark.contract
 @pytest.mark.slow
 @pytest.mark.flaky(reruns=2)
-@pytest.mark.xfail(
-    condition=True,
-    reason="Backend acepta query params no definidos en OpenAPI (falta validación estricta)",
-    strict=False
-)
 @schema.parametrize()
-def test_well_parameters_contract(
+def test_well_detail_contract(
     case,
     nettra_token,
-    existing_well_with_parameters
+    existing_well_id,
 ):
     """
-    Valida que GET /wells/{id}/parameters
+    Valida que GET /wells/{well_id}
     cumple con el contrato OpenAPI.
     """
 
-    case.path_parameters["id"] = existing_well_with_parameters
+    case.path_parameters["well_id"] = existing_well_id
+
     execute_contract_case(case, nettra_token)
