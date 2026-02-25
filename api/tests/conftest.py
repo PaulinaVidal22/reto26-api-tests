@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 
 from api.clients.nettra_client import NettraClient
 from api.clients.ithaka_client import IthakaClient
-from api.models.nettra.anomaly_models import AnomaliesResponse
+from api.builders.nettra.well_builder import WellBuilder
 
 load_dotenv()
 
@@ -36,7 +36,7 @@ def ithaka_base_url():
 # =========================
 
 @pytest.fixture(scope="session")
-def nettra_token(nettra_base_url):
+def nettra_token(nettra_base_url: str):
     """
     Obtiene un JWT válido desde el backend de Nettra.
     Falla inmediatamente si las credenciales son inválidas.
@@ -83,7 +83,7 @@ def ithaka_token():
 # =========================
 
 @pytest.fixture(scope="session")
-def nettra_client(nettra_base_url, nettra_token):
+def nettra_client(nettra_base_url: str, nettra_token: str | None):
     client = NettraClient(
         base_url=nettra_base_url,
         token=nettra_token
@@ -91,9 +91,8 @@ def nettra_client(nettra_base_url, nettra_token):
     yield client
     client.close()
 
-
 @pytest.fixture(scope="session")
-def ithaka_client(ithaka_base_url, ithaka_token):
+def ithaka_client(ithaka_base_url: str, ithaka_token: str | None):
     client = IthakaClient(
         base_url=ithaka_base_url,
         token=ithaka_token
@@ -101,23 +100,30 @@ def ithaka_client(ithaka_base_url, ithaka_token):
     yield client
     client.close()
 
+# =========================
+# 
+# =========================
+
 @pytest.fixture(scope="session")
-def existing_well_with_anomalies(nettra_client):
-    response = nettra_client.get("/wells/")
+def existing_well_with_anomalies(nettra_client: NettraClient, nettra_token: str | None):
 
-    assert response.status_code == 200, "No se pudieron obtener wells"
+    builder = WellBuilder(nettra_client, nettra_token)
 
-    wells = response.json().get("items", [])
-    assert wells, "No existen wells en el entorno"
+    well_id = builder.with_anomalies()
 
-    for well in wells:
-        well_id = well["id"]
+    if not well_id:
+        pytest.skip("No existe ningún well con anomalies en el entorno")
 
-        anomalies_response = nettra_client.get_well_anomalies(well_id)
+    return well_id
 
-        if anomalies_response.status_code == 200:
-            validated = AnomaliesResponse(**anomalies_response.json())
-            if validated.data:
-                return well_id
+@pytest.fixture(scope="session")
+def existing_well_with_parameters(nettra_client: NettraClient, nettra_token: str | None):
 
-    pytest.skip("No existe ningún well con anomalies en el entorno")
+    builder = WellBuilder(nettra_client, nettra_token)
+
+    well_id = builder.with_parameters()
+
+    if not well_id:
+        pytest.skip("No existe ningún well con parameters en el entorno")
+
+    return well_id

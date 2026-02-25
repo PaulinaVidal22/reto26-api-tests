@@ -2,7 +2,7 @@ import pytest
 
 from api.models.nettra.anomaly_models import AnomaliesResponse
 from api.models.nettra.error_models import ErrorResponse
-from api.builders.anomalies_builder import AnomaliesQueryBuilder
+from api.builders.nettra.anomalies_query_builder import AnomaliesQueryBuilder
 
 
 INVALID_WELL = "00000000-0000-0000-0000-000000000000"

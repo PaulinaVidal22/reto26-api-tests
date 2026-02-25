@@ -30,6 +30,7 @@ schema = (
 @pytest.mark.slow
 @pytest.mark.flaky(reruns=2)
 @pytest.mark.xfail(
+    condition=True,
     reason="OpenAPI contract mismatch con validación backend",
     strict=False
 )
